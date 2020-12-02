@@ -1,5 +1,3 @@
-import Data.List
-
 toPairs :: Ord a => [a] -> [(a, a)]
 toPairs l = [(x,y) | x <- l, y <- l, x < y]
 
