@@ -12,7 +12,7 @@ parseLine :: [String] -> Policy
 parseLine line =
     case line of
         [bounds, [letter,':'], pass] -> (
-            case (parseBounds bounds) of
+            case parseBounds bounds of
                 Just(lower, upper) -> Policy {lower=lower, upper=upper, letter=letter, pass=pass}
                 _ -> error "bad bounds"
             )
