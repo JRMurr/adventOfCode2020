@@ -3,18 +3,17 @@ import Data.List.Split
 import Data.Set (Set)
 import qualified Data.Set as Set
 
+groupByBlank :: [String] -> [[String]]
+groupByBlank = splitOn [""]
+
 toSets :: [String] -> [Set Char]
 toSets lst = 
-    let grouped = splitOn [""] lst in
-        [Set.fromList (filter (/=' ') $ unwords x) | x <-grouped]
+    [Set.fromList (filter (/=' ') $ unwords x) | x <-groupByBlank lst]
 
 getGroupIntersection :: [String] -> [Set Char]
 getGroupIntersection lst = 
-    let grouped = splitOn [""] lst in
-        map (
-            foldl (\acc x -> acc `Set.intersection` (Set.fromList x)) (Set.fromList ['a'..'z'])
-        ) grouped
-
+    map (foldl (\acc x -> acc `Set.intersection` Set.fromList x) (Set.fromList ['a'..'z'])) 
+        $ groupByBlank lst
 
 getInput :: IO [String]
 getInput = do
