@@ -22,9 +22,7 @@ type PassportMap = Map String String
 
 toMap :: String -> PassportMap
 toMap passport =
-    let lstPairs = map (splitOn ":") (words passport) in
-        let tuplePairs = map tuplify2 lstPairs in
-            Map.fromList tuplePairs
+        Map.fromList (map (tuplify2 . splitOn ":") (words passport))
 
 requiredKeys :: [String]
 requiredKeys = ["byr", "iyr", "eyr", "hgt", "hcl", "ecl", "pid"]
