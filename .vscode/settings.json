@@ -1,6 +1,8 @@
 {
     "cSpell.words": [
+        "concat",
         "foldl",
+        "tuplify",
         "unwords"
     ],
     "editor.formatOnSave": true
