@@ -1,11 +1,11 @@
 module Main where
 import Data.List
 import Data.List.Split
-parseInput :: [String] -> (Int, [Int])
+parseInput :: [String] -> (Int, [(Int, Int)])
 parseInput lines = case lines of
   [time, busIds] ->
-    let busIdsList = splitOn "," busIds
-     in (read time, [read x | x <- busIdsList, x /= "x"])
+    let busIdsList = zip [0..] (splitOn "," busIds)
+     in (read time, [(idx, read x) | (idx,x) <- busIdsList, x /= "x"])
   _ -> error "bad input"
 
 -- gets the decimal portion of the number
@@ -25,21 +25,33 @@ findNextBus arriveTime busIds =
   let comesIn = getModRemiander  arriveTime nextBus in
     (nextBus, comesIn)
 
+-- isTimeValid :: Int -> [(Int, Int)] -> Bool
+-- isTimeValid time = all (\(idx, busId) -> (time + idx) `mod` busId == 0)
+
+isTimeValid :: Int -> [Int] -> Bool
+isTimeValid time = all (\busId -> time `mod` busId == 0)
+
+
 part1 :: IO ()
 part1 = do
   lines <- getInput
   let (arriveTime, busIds) = parseInput lines
-  let (nextBus, comesIn) = findNextBus arriveTime busIds
+  let (nextBus, comesIn) = findNextBus arriveTime (map snd busIds)
   print $ (nextBus, comesIn)
   print $ nextBus * comesIn
+
 
 part2 :: IO ()
 part2 = do
   lines <- getInput
-  print lines
+  let (_, busIds) = parseInput lines
+  let shiftedTimes = map (\(idx, x) -> x - idx) busIds
+  let biggest = maximum shiftedTimes
+  let firstValidTime = find (\x -> isTimeValid x shiftedTimes) [biggest,biggest..] 
+  print firstValidTime
 
 getInput :: IO [String]
 getInput = lines <$> readFile "./in"
 
 main :: IO ()
-main = part1
+main = part2
