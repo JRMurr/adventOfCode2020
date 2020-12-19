@@ -1,7 +1,9 @@
 {
     "cSpell.words": [
         "concat",
+        "eval",
         "foldl",
+        "mult",
         "tuplify",
         "uncons",
         "unwords"
