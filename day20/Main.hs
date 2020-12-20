@@ -6,11 +6,13 @@ module Main where
 import Data.Bifunctor (second)
 import Data.Char
 import Data.List
-import Data.List.Split (splitOn)
+import Data.List.Split (chunksOf, splitOn)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import Data.Maybe
 import Debug.Trace
+
+type Mask = [String]
 
 data Cell = On | Off deriving (Eq)
 
@@ -183,16 +185,51 @@ joinGrid grid =
     cords = getAllCords (Map.size grid)
     rows = map (joinCols grid) cords
 
+checkCell :: (Char, Cell) -> Bool
+checkCell ('#', On) = True
+checkCell ('#', Off) = False
+checkCell _ = True
+
+checkRow :: (String, [Cell]) -> Maybe Int
+checkRow (mask, row) =
+  if isMatch then Just (length (filter ('#' ==) mask)) else Nothing
+  where
+    isMatch = all checkCell (zip mask row)
+
+-- if mask matches returns number of '#' tiles that matched the mask
+-- TODO: the mask is not the width of the tiles, need to add padding and check all paddings
+checkChunk :: Mask -> Tile -> Maybe Int
+checkChunk mask tile | length mask /= length tile = Nothing
+checkChunk mask tile =
+  if fullMatch then Just (sum (map fromJust checkedRows)) else Nothing
+  where
+    checkedRows = map checkRow (zip mask tile)
+    fullMatch = all isJust checkedRows
+
+checkTile :: Mask -> Tile -> Maybe Int
+checkTile mask tile =
+  if hasMatches then Just (sum (map (fromMaybe 0) checkedChunks)) else Nothing
+  where
+    chunks = chunksOf (length mask) tile
+    checkedChunks = map (checkChunk mask) chunks
+    hasMatches = trace (show checkedChunks) $ any isJust checkedChunks
+
+-- if mask matches returns number of '#' tiles that matched the mask
+getMatchedCount :: Mask -> Tile -> Int
+getMatchedCount mask tile =
+  fromJust $ fromJust (find isJust checkedOrientations)
+  where
+    orientations = allOrientations tile
+    checkedOrientations = map (checkTile mask) orientations
+
 part2 :: IO ()
 part2 = do
   input <- getInput
+  mask <- getMask
   let tiles = map (second allOrientations) input
   let grid = placeTiles tiles
-  let cornerTile = grid Map.! (0, 0)
-  -- putStrLn $ showTile (snd cornerTile)
-  let row = head $ getAllCords (length input)
-  -- print $ map (fst . (grid Map.!)) row
-  putStrLn $ showTile $ joinGrid grid
+  let image = joinGrid grid
+  print $ getMatchedCount mask image
   return ()
 
 main :: IO ()
@@ -200,6 +237,9 @@ main = part2
 
 groupByBlank :: [String] -> [[String]]
 groupByBlank = splitOn [""]
+
+getMask :: IO [String]
+getMask = lines <$> readFile "./mask"
 
 getInput :: IO [(Int, Tile)]
 getInput = map parseTile . groupByBlank . lines <$> readFile "./in.example"
