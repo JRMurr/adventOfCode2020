@@ -1,6 +1,5 @@
 module Main where
 
-import Data.Function
 import Data.IntMap.Strict (IntMap)
 import qualified Data.IntMap.Strict as IntMap
 import Data.List.Split (splitOn)
