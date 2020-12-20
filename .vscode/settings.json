@@ -2,6 +2,7 @@
     "cSpell.words": [
         "concat",
         "eval",
+        "fmap",
         "foldl",
         "mult",
         "tuplify",
