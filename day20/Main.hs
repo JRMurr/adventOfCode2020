@@ -6,7 +6,7 @@ module Main where
 import Data.Bifunctor (second)
 import Data.Char
 import Data.List
-import Data.List.Split (chunksOf, splitOn)
+import Data.List.Split (splitOn)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import Data.Maybe
@@ -185,6 +185,20 @@ joinGrid grid =
     cords = getAllCords (Map.size grid)
     rows = map (joinCols grid) cords
 
+getPaddedMask :: Int -> Mask -> [Mask]
+getPaddedMask len mask =
+  map (\pad -> map (pad++) mask) pads
+  where
+    diff = len - length (head mask)
+    pads:: [String]
+    pads = [replicate x ' ' | x <- [0 .. diff]]
+
+chunk :: Int -> [a] -> [[a]]
+chunk n xs =  
+  if  length chunk' < n then []
+  else chunk' : chunk n (tail xs)
+    where chunk' = take n xs
+
 checkCell :: (Char, Cell) -> Bool
 checkCell ('#', On) = True
 checkCell ('#', Off) = False
@@ -197,22 +211,22 @@ checkRow (mask, row) =
     isMatch = all checkCell (zip mask row)
 
 -- if mask matches returns number of '#' tiles that matched the mask
--- TODO: the mask is not the width of the tiles, need to add padding and check all paddings
 checkChunk :: Mask -> Tile -> Maybe Int
 checkChunk mask tile | length mask /= length tile = Nothing
 checkChunk mask tile =
-  if fullMatch then Just (sum (map fromJust checkedRows)) else Nothing
+  if (not . null) validChunks then Just (sum validChunks) else Nothing
   where
-    checkedRows = map checkRow (zip mask tile)
-    fullMatch = all isJust checkedRows
+    paddedMask = getPaddedMask (length $ head tile) mask
+    paddedChecks = map (\pMask -> map checkRow (zip pMask tile)) paddedMask
+    validChunks = [sum (map fromJust x) | x <- paddedChecks, all isJust x]
 
 checkTile :: Mask -> Tile -> Maybe Int
 checkTile mask tile =
   if hasMatches then Just (sum (map (fromMaybe 0) checkedChunks)) else Nothing
   where
-    chunks = chunksOf (length mask) tile
+    chunks = chunk (length mask) tile
     checkedChunks = map (checkChunk mask) chunks
-    hasMatches = trace (show checkedChunks) $ any isJust checkedChunks
+    hasMatches = any isJust checkedChunks
 
 -- if mask matches returns number of '#' tiles that matched the mask
 getMatchedCount :: Mask -> Tile -> Int
@@ -222,6 +236,12 @@ getMatchedCount mask tile =
     orientations = allOrientations tile
     checkedOrientations = map (checkTile mask) orientations
 
+countOn :: Tile -> Int
+countOn tile = 
+  sum rowCounts
+  where
+    rowCounts = map (length . filter (On ==)) tile
+
 part2 :: IO ()
 part2 = do
   input <- getInput
@@ -229,7 +249,9 @@ part2 = do
   let tiles = map (second allOrientations) input
   let grid = placeTiles tiles
   let image = joinGrid grid
-  print $ getMatchedCount mask image
+  let matched = getMatchedCount mask image
+  let totalOn = countOn image
+  print $ totalOn - matched
   return ()
 
 main :: IO ()
@@ -242,4 +264,4 @@ getMask :: IO [String]
 getMask = lines <$> readFile "./mask"
 
 getInput :: IO [(Int, Tile)]
-getInput = map parseTile . groupByBlank . lines <$> readFile "./in.example"
+getInput = map parseTile . groupByBlank . lines <$> readFile "./in"
