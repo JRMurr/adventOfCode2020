@@ -3,8 +3,6 @@ module Main where
 import Data.Foldable (Foldable (toList))
 import Data.List
 import Data.List.Split (splitOn)
-import Data.Map.Strict (Map)
-import qualified Data.Map.Strict as Map
 import Data.Maybe
 import Data.Sequence (Seq (..))
 import qualified Data.Sequence as Seq
@@ -21,8 +19,6 @@ type Decks = (Deck, Deck)
 type DecksSeq = (DeckSeq, DeckSeq)
 
 type PrevRoundsSet = Set DecksSeq
-
-type AllRounds = Map Decks (Int, Deck)
 
 mapWithIdx :: ((Int, a) -> b) -> [a] -> [b]
 mapWithIdx f = zipWith (curry f) [0 ..]
@@ -48,7 +44,7 @@ unconsSeq s = (Seq.index s 0, Seq.drop 1 s)
 
 -- return number of player who won
 playGameP2 :: DecksSeq -> PrevRoundsSet -> (Int, DeckSeq)
-playGameP2 d s | d `elem` s = (1, fst d) -- 1 wins since this setup was seen
+playGameP2 d s | d `Set.member` s = (1, fst d) -- 1 wins since this setup was seen
 playGameP2 (x, y) _ | y == Seq.empty = (1, x)
 playGameP2 (y, x) _ | y == Seq.empty = (2, x)
 playGameP2 (d1, d2) s = case winnerSubGame of
@@ -58,7 +54,7 @@ playGameP2 (d1, d2) s = case winnerSubGame of
   where
     (d1H, d1T) = unconsSeq d1
     (d2H, d2T) = unconsSeq d2
-    winnerSubGame = if (d1H <= length d1T) && (d2H <= length d2T) then Just (playGameP2 (d1T, d2T) Set.empty) else Nothing
+    winnerSubGame = if (d1H <= length d1T) && (d2H <= length d2T) then Just (playGameP2 (Seq.take d1H d1T, Seq.take d2H d2T) Set.empty) else Nothing
     p1Wins = playGameP2 (d1T Seq.>< Seq.fromList [d1H, d2H], d2T) (Set.insert (d1, d2) s)
     p2Wins = playGameP2 (d1T, d2T Seq.>< Seq.fromList [d2H, d1H]) (Set.insert (d1, d2) s)
 
