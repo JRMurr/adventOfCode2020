@@ -37,21 +37,20 @@ calcScore (x, []) = calcScoreOfDeck x
 calcScore ([], x) = calcScoreOfDeck x
 
 -- return number of player who won
-playGameP2 :: Decks -> PrevRoundsSet -> AllRounds -> (Int, Deck, AllRounds)
-playGameP2 d s m | d `elem` s = (1, fst d, m) -- 1 wins since this setup was seen
-playGameP2 d s m | d `Map.member` m = let (x, y) = m Map.! d in (x, y, m)
-playGameP2 (x, []) _ m = (1, x, m)
-playGameP2 ([], x) _ m = (2, x, m)
-playGameP2 (d1, d2) s m = case winnerSubGame of
-  Just (1, d, m') -> p1Wins (Map.insert (d1, d2) (1, d) m)
-  Just (2, d, m') -> p2Wins (Map.insert (d1, d2) (2, d) m)
-  _ -> if d1H >= d2H then p1Wins m else p2Wins m
+playGameP2 :: Decks -> PrevRoundsSet -> (Int, Deck)
+playGameP2 d s | d `elem` s = (1, fst d) -- 1 wins since this setup was seen
+playGameP2 (x, []) _ = (1, x)
+playGameP2 ([], x) _ = (2, x)
+playGameP2 (d1, d2) s = case winnerSubGame of
+  Just (1, _) -> p1Wins
+  Just (2, _) -> p2Wins
+  _ -> if d1H >= d2H then p1Wins else p2Wins
   where
     (d1H, d1T) = fromJust $ uncons d1
     (d2H, d2T) = fromJust $ uncons d2
-    winnerSubGame = if (d1H <= length d1T) && (d2H <= length d2T) then Just (playGameP2 (d1T, d2T) Set.empty m) else Nothing
-    p1Wins m = playGameP2 (d1T ++ [d1H, d2H], d2T) (Set.insert (d1, d2) s) m
-    p2Wins m = playGameP2 (d1T, d2T ++ [d2H, d1H]) (Set.insert (d1, d2) s) m
+    winnerSubGame = if (d1H <= length d1T) && (d2H <= length d2T) then Just (playGameP2 (d1T, d2T) Set.empty) else Nothing
+    p1Wins = playGameP2 (d1T ++ [d1H, d2H], d2T) (Set.insert (d1, d2) s)
+    p2Wins = playGameP2 (d1T, d2T ++ [d2H, d1H]) (Set.insert (d1, d2) s)
 
 part1 :: IO ()
 part1 = do
@@ -62,7 +61,7 @@ part1 = do
 part2 :: IO ()
 part2 = do
   input <- getInput
-  let (_, winner, _) = playGameP2 input Set.empty Map.empty
+  let (_, winner) = playGameP2 input Set.empty
   print $ calcScoreOfDeck winner
   return ()
 
@@ -76,4 +75,4 @@ tuplify2 :: [a] -> (a, a)
 tuplify2 [x, y] = (x, y)
 
 getInput :: IO Decks
-getInput = tuplify2 . map (map read . tail) . groupByBlank . lines <$> readFile "./in"
+getInput = tuplify2 . map (map read . tail) . groupByBlank . lines <$> readFile "./in.example"
