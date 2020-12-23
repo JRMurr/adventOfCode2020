@@ -42,9 +42,11 @@ getDest s currCup = destIdx
     -- index of the dest + 1 in the original list
     destIdx = fromJust (Seq.elemIndexL destValue s) + 1
 
--- TODO: roate list so the curr cup is the head
+-- TODO: rotate list so the curr cup is the head
 -- will make every other func way easier to deal with
--- maybe do cyclic linked list?
+-- since the will always remove index 1 - 3 (inclusive)
+-- dest value will need some work
+-- cyclic linked list might make this way easier or way harder...
 playRound :: Seq Int -> Int -> (Seq Int, Int)
 playRound cups currCup =
   (nextCups, nextCurr)
