@@ -5,6 +5,9 @@ import Data.Maybe
 import Data.Sequence (Seq (..))
 import qualified Data.Sequence as Seq
 import Debug.Trace
+import Data.IntMap.Strict (IntMap)
+import qualified Data.IntMap.Strict as IntMap
+type Circle = (Int, IntMap Int)
 
 -- Given an index into a list/seq return the correct index with wrapping
 getIndexWrapped i s =
@@ -64,32 +67,60 @@ playNTimes s currCup n =
   let (newS, newCurr) = playRound s currCup
    in playNTimes newS newCurr (n -1)
 
+
+-- seqToCircle:: Seq Int -> Circle
+-- seqToCircle s = 
+
 part1 :: IO ()
 part1 = do
   input <- getInput
-  print $ playNTimes input (getElem input 0) 100
+  let cups = Seq.fromList input
+  print $ playNTimes cups (getElem cups 0) 100
   return ()
 
 genCups :: Seq Int -> Seq Int
 genCups cups = cups Seq.>< toAppend
   where
     startVal = maximum cups + 1
-    numVal = 1000000 - startVal
+    numVal = (1000000 - startVal) + 1
     toAppend = Seq.iterateN numVal (1 +) startVal
+
+pairs:: [a] -> [(a,a)]
+pairs = zip <*> tail
+
+getCircle:: [Int] -> Circle
+getCircle lst = 
+  (currentCup, c)
+  where 
+    currentCup = head lst
+    m = IntMap.fromList (pairs (lst ++ [10 .. 1000000]))
+    c = IntMap.insert 1000000 currentCup m
+
+maxN = 1000000
+playRoundCircle:: Circle -> Circle
+playRoundCircle (n,m) = 
+  let n1 = m IntMap.! n
+      n2 = m IntMap.! n1
+      n3 = m IntMap.! n2
+      next = m IntMap.! n3
+      descending = [n-1, n-2 .. 1] ++ [maxN, maxN-1 ..]
+      small = head $ filter (`notElem` [n1, n2, n3]) descending
+      m' = IntMap.union (IntMap.fromList [(n, next), (small, n1), (n3, m IntMap.! small)]) m
+    in  (next, m') 
+
 
 part2 :: IO ()
 part2 = do
   input <- getInput
-  let cups = genCups input
-  let res = playNTimes cups (getElem cups 0) 10000000
-  let oneIdx = fromJust (Seq.elemIndexL 1 res)
-  let firstCup = getElem res (oneIdx + 1)
-  let secondCup = getElem res (oneIdx + 2)
-  print (firstCup, secondCup)
+  let circle = getCircle input
+  let (_, m) = iterate playRoundCircle circle !! 10000000
+  let n1 = m IntMap.! 1
+  let n2 = m IntMap.! n1
+  print $ n1 * n2
   return ()
 
 main :: IO ()
 main = part2
 
-getInput :: IO (Seq Int)
-getInput = Seq.fromList . map digitToInt . head . lines <$> readFile "./in.example"
+getInput :: IO [Int]
+getInput = map digitToInt . head . lines <$> readFile "./in"
